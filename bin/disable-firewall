@@ -1,0 +1,39 @@
+#!/bin/bash
+#BlueQueen Framework disable-firewall
+#compatible : iptables, ufw
+
+echo "BlueQueen Framework disable-firewall"
+echo
+ufw="yes"
+command -v ufw > /dev/null 2>&1 || \
+{
+	ufw="no"
+}
+iptables="yes"
+command -v iptables > /dev/null 2>&1 || \
+{
+	iptables="no"
+}
+
+if [ $iptables = "yes" ]
+then
+	if [ $ufw = "yes" ]
+	then
+		echo "Disabling 'ufw'"
+		ufw disable
+	else
+		echo "Saving rules : /root/fwall.rules.bq"
+		iptables-save > /root/fwall.rules.bq
+		iptables -X
+		iptables -t nat -F
+		iptables -t nat -X
+		iptables -t mangle -F
+		iptables -t mangle -X
+		iptables -P INPUT ACCEPT
+		iptables -P FORWARD ACCEPT
+		iptables -P OUTPUT ACCEPT
+		echo "All connections won't be filtered from now."
+	fi
+else
+	echo "I couldn't found iptables, stopping"
+fi

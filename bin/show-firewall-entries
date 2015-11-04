@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "BlueQueen Framework 1.0 - Show Firewall Entries"
+echo ""
+ufw status

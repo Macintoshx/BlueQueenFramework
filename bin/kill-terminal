@@ -1,0 +1,10 @@
+#!/bin/bash
+#BlueQueen Framework <command_name>
+## Optional author info
+echo "BlueQueen Framework <command_name>"
+echo
+## Command code
+id="$(printf $(ps -dN|grep $1))"
+ps -dN|grep pts/3
+echo "KILL : $id"
+kill "$id"

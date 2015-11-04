@@ -1,0 +1,39 @@
+#!/bin/bash
+#BlueQueen Framework send_login_alert
+## Optional author info
+#echo "BlueQueen Framework send_login_alert"
+#echo
+## Command code
+##USING:
+##add this script to .bashrc file for executing at log in.
+##REQUIREMENTS:
+#  tr
+#  mail   (configured)
+##ADDITIONAL INFO:
+## 
+trash="$(egrep -aio -m 1 "[a-z0-9]{10}" /dev/urandom)"
+tmpFile="/tmp/bq.mailersystem.$trash"
+
+####CONFIG
+
+sendTO="recipient's email here "
+mailPath="mutt"
+##########
+#########
+#ADVANCED_RESULT=$(echo $1 | grep -E "^(([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+|(\"([][,:;<>\&@a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~-]|(\\\\[\\ \"]))+\"))\.)*([-a$
+#if [ ! "x$ADVANCED_RESULT" = "x" ]; then echo "Valid"; else echo "Invalid"; fi
+
+#exit
+
+
+user="$(whoami | tr '[:lower:]' '[:upper:]')"
+#body
+echo -e "ALERT \n\nSSH access for user:  $user \n\nDate :  $(date +"%A, %F %T")\nData :\n" > $tmpFile
+echo -e "$( w -u -i )\n\nNetwork connections:\n$(netstat -pan --inet)" >> $tmpFile
+
+#body-end
+echo -e "\n------------------------------------\nBlueQueen Alert System automatic information" >> $tmpFile
+#body-real-end
+cat $tmpFile | $mailPath -s "BlueQueen Logging System Alert" $sendTO
+#clean-up
+rm -f $tmpFile

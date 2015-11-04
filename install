@@ -1,0 +1,188 @@
+#!/bin/bash
+
+#########		CONFIG
+FILE="/tmp/out.$$"
+GREP="/bin/grep"
+AUTOINSTALL="ASK"   #Valid : "YES" "NO" "ASK"
+
+#############################################
+
+#pre-settings
+pushd $(dirname $0) > /dev/null
+SCRIPTPATH=$(pwd -P)
+popd > /dev/null
+source $SCRIPTPATH/include/additions.bq
+##silent checking if apt-get exists
+if [ $(command -v apt-get) ]; then
+	APTGET="TRUE"
+	APTUP="NO"
+else
+	APTGET="FALSE"
+fi
+#functions
+checkavailability()
+{
+	if [ $# -eq 0 ]; then
+		echo "Checking ERROR: no argument for function checkavailability()"
+		exit 1
+	fi
+	printf "\n"
+	printf "		Checking for ... '$1'"
+	command -v $1 > /dev/null 2>&1 || \
+	{ 
+		echo-red "		Not Found\n"
+		if [ $AUTOINSTALL = "YES" ]; then
+			if [ $APTGET = "TRUE" ]; then
+				echo "		Trying to auto install '$1'"
+				if [ $APTUP = "NO" ]; then 
+					echo "		UPDATING APT DATABASE, PLEASE WAIT"
+					apt-get update > /dev/null
+					APTUP="YES"
+				fi
+				if [ ! $(apt-get install -y "$1" > /dev/null) ]; then
+					if [ $(command -v "$1") ]; then
+						printf "		Checking for ... '$1'"
+						echo-green "		Found \n"
+						return;
+					else
+						echo-red "Probably something went wrong, check carefully if '$1' is installed"
+						exit 1
+					fi
+				else
+					echo "An error occurred while trying to install '$1', install it manually!"
+					exit 1
+				fi
+			else
+				echo-red "		apt-get not found. \n		Installer can't install required packages automatically. \n		Install '$1' manually!"
+				exit 1
+			fi
+		elif [ $AUTOINSTALL = "ASK" ]; then
+			dialog --title "Question" \
+			--backtitle "BlueQueen Framework Installer" \
+			--yesno "\n\nAutomatically install required dependencies if they're not found?" 7 50
+			odp=$?
+			case $odp in
+				0)
+					AUTOINSTALL="YES"
+					checkavailability $1
+					return
+				;; #yes
+				1)  AUTOINSTALL="NO"
+					checkavailability $1
+				;;
+				255)
+					checkavailability $1
+			esac
+		else
+			echo-red "\nRequired package '$1' is not installed. \nYou're not agreed to auto-install, so install it manually.\n"
+			exit 1
+		fi
+		return
+	}
+	echo-green "		Found "
+	printf "'$1'"
+}
+
+###		MAIN
+
+echo "BlueQueen Framework installation"
+echo
+echo "Checking privileges"
+
+if [[ $EUID -ne 0 ]]
+then
+	echo-red "You've not admin privileges... aborting installation"
+	exit
+fi
+echo-green "OK\n"
+echo "Checking prerequirements for installer"
+echo "		Checking for ... 'dialog'"
+command -v dialog > /dev/null 2>&1 || \
+{ 
+	echo-red "		Not Found\n"
+	echo "		Trying to auto install 'dialog'"
+	echo "		Checking for ... 'apt-get'"
+	if [ APTGET = "FALSE" ] ; then
+		echo; echo;
+		echo-red "apt-get not found. Install 'dialog' manually\n"	
+		exit 1
+	fi
+	echo-green "		Found "
+	printf "'apt-get'\n"
+	echo "		UPDATING APT DATABASE, PLEASE WAIT"
+	apt-get update > /dev/null
+	APTUP="YES"
+	apt-get install -y dialog
+	echo
+	echo
+	if [ $(command -v dialog) ]; then
+		echo "		Checking for ... 'dialog'"
+	else
+		echo-red "An error eccurred while installing 'dialog', install it manually\n"
+		exit 1
+	fi
+}
+echo-green "		Found "
+printf "'dialog'\n"
+echo-green "OK\n"
+echo "Checking completed."
+
+sleep 1
+dialog --title "Question" \
+--backtitle "BlueQueen Framework Installer" \
+--yesno "\n\nStart installation process?" 7 50
+odp=$?
+case $odp in
+	0)
+	##installation procedure start
+		BQ_BIN=$SCRIPTPATH/bin
+		BQ_ETC=$SCRIPTPATH/etc
+		echo $BQ_BIN
+		for file in $BQ_BIN/*; do
+			newFile=$(basename $file)
+			if [[ -d $file ]] #if directory
+			then
+				continue
+			fi
+			if [ $newFile = "install" ] || [ $newFile = "uninstall" ] || [[ $newFile = *"~"* ]] || [[ $newFile = "empty-project" ]]
+			then
+				echo-red "SKIP		"
+				printf "$file\n"
+			else
+				echo-green "PROCEED		"
+				printf "$file\n"
+				printf "		Checking dependencies..."
+				##checking dependencies
+				if [ -f $newFile ]; then
+					echo
+					for line in $(cat "$BQ_ETC/$newFile"); do
+						checkavailability $line
+					done
+					printf "\n"
+				else
+					echo-red "\tNO NEEDED DEPENDENCIES\n"
+				fi	
+				#######################
+				#install
+				##checking if files exists
+					if test -a /bin/$newFile
+					then
+						echo-blue "		File exists, deleting file   /bin/$newFile \n"  
+						rm /bin/$newFile
+					fi
+				echo "		Make file runnable : "$newFile
+				chmod +x $file
+				echo "		Linking file :  /bin/"$newFile" -> " $file
+				ln -s $file /bin/$newFile
+				##end
+				#dialog --title "Information" --backtitle "BlueQueen Framework" --msgbox "Installation Complete" 7 50
+			fi 
+		done
+		echo
+		echo
+		echo-green "Installation complete!\n"
+		##installation procedure end
+	;; #yes
+	1) echo-red "Installation Aborted\n" ;; #no
+	255) echo-red "Installation Aborted\n" ;; #exit
+esac

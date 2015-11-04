@@ -1,0 +1,66 @@
+#!/bin/sh
+###	REQUIREMENTS
+#egrep
+#grep
+#sed
+#mail / mutt
+#gpg
+
+######	CONFIG
+
+GPG="/usr/bin/gpg"			# GPG location
+mailAddr="/usr/bin/mail.old"		# move original mail executable to another location (or rename)
+logFile="/var/log/bq.mail.log"		# file to store logs (sent mail - recipients, times, modes)
+DEBUG="ON"				# ON - verbose mode , anything else - silent mode
+CERT_PASS="PASS"
+
+##############
+
+trash="$(egrep -aio -m 1 "[a-z0-9]{6}" /dev/urandom)"
+tmpFile="/tmp/bq.mail.$trash"  # temporary file to store message. script creates also .enc for encrypted message (if message was encrypted)
+
+if [ $DEBUG = "ON" ]; then echo "\nDEBUG MODE ENABLED\n"; fi
+for var in "$@"  # searching for valid email address among arguments
+do
+	#BASIC_RESULT=$(echo $var | egrep "^(([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~])+\.)*[-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+@\w((-|\w)*\w)*\.(\w((-|\w)*\w)*\.)*\w{2,4}$")
+	BASIC_RESULT=$(echo $var | grep -E "^(([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+|(\"([][,:;<>\&@a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~-]|(\\\\[\\ \"]))+\"))\.)*([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+|(\"([][,:;<>\&@a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~-]|(\\\\[\\ \"]))+\"))@\w((-|\w)*\w)*\.(\w((-|\w)*\w)*\.)*\w{2,4}$")
+	if [ ! "x$BASIC_RESULT" = "x" ]; then		
+		TO=$var
+		break
+	fi
+done
+if [ $DEBUG = "ON" ]; then echo "Message will be sent to: $TO\n"; fi
+msg=""
+while read -r x; do # reading message from pipe
+    msg=$msg'\n'$x
+done
+echo $msg > $tmpFile  ## saving read message to file
+
+timeout 15 $GPG --batch --armor --trust-model always --recipient "$TO" --encrypt --sign --passphrase $CERT_PASS --output $tmpFile".enc" < $tmpFile > /dev/null 2>&1  #try to encrypt stored message
+if [ -f $tmpFile".enc" ]; then # if message was encrypted (if file exists)...
+	tmpFile=$tmpFile".enc"
+	echo $(date +"%F %T  |  ")"INFO: Sending encrypted mail to: \t <$TO>" >> $logFile
+	if [ $DEBUG = "ON" ]; then echo "USED FILE : $tmpFile\nMODE: encrypt "; fi
+else
+	echo $(date +"%F %T  |  ")"WARNING: Sending unencrypted mail to: \t <$TO>" >> $logFile
+	if [ $DEBUG = "ON" ]; then echo "USED FILE : $tmpFile\nMODE: encryption skipped"; fi
+fi
+
+
+cat $tmpFile | $mailAddr "$@"  # sending mail
+
+
+if [ $DEBUG = "ON" ]; then
+	echo "---BEGIN-OF-MESSAGE---"
+	cat $tmpFile
+	echo "---END-OF-MESSAGE---"
+fi
+#CLEAN-UP
+tmpFile=$(echo $tmpFile | sed 's/.enc//g')"*" 
+if [ $DEBUG = "ON" ]; then
+	echo "\nCleaning Up:\n"
+	rm -f -v $tmpFile
+else
+	rm -f $tmpFile
+fi
+###END

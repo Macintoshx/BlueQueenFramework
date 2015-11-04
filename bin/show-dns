@@ -1,0 +1,5 @@
+#!/bin/bash
+#BlueQueen Framework Show DNS'es
+echo "BlueQueen Framework show-dns"
+echo
+cat /etc/resolv.conf

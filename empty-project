@@ -1,0 +1,7 @@
+#!/bin/bash
+#BlueQueen Framework <command_name>
+## Optional author info
+echo "BlueQueen Framework <command_name>"
+echo
+## Command code
+

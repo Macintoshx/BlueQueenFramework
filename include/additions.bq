@@ -1,0 +1,22 @@
+#!/bin/bash
+#additions for BlueQueen Framework Installer
+green='\e[0;32m'
+blue='\e[1;34m'
+red='\e[1;31m'
+endColor='\e[0m'
+
+function echo-green ()
+{
+printf "${green}$1${endColor}"
+}
+
+function echo-blue ()
+{
+printf "${blue}$1${endColor}"
+}
+
+function echo-red ()
+{
+printf "${red}$1${endColor}"
+}
+

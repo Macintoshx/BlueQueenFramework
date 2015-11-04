@@ -1,0 +1,59 @@
+#!/bin/bash
+echo "BlueQueen Framework installation"
+pushd $(dirname $0) > /dev/null
+SCRIPTPATH=$(pwd -P)
+popd > /dev/null
+source $SCRIPTPATH/include/additions.bq
+echo "Checking privileges"
+FILE="/tmp/out.$$"
+GREP="/bin/grep"
+if [[ $EUID -ne 0 ]]
+then
+	echo-red "You have not admin privileges... aborting installation"
+	exit
+fi
+dialog --title "Question" \
+--backtitle "BlueQueen Framework Installer" \
+--yesno "\n\nStart uninstallation process?" 7 50
+odp=$?
+case $odp in
+0)
+	##uninstallation procedure start
+
+	BQ=$SCRIPTPATH/bin
+	echo $BQ
+	for file in $BQ/*; do
+		newFile=$(basename $file)
+		if [[ -d $file ]]
+		then
+			continue
+		fi
+		if [ $newFile = "install" ] || [ $newFile = "uninstall" ] || [[ $newFile = *"~"* ]] || [[ $newFile = "empty-project" ]]
+		then
+			echo-red "SKIP		"
+			printf "$file\n"
+		else
+			echo-green "PROCEED		"
+			printf "$file\n"
+			#uninstall
+			##check if files exists
+			echo "		Make file unrunnable : "$newFile
+			chmod -x $file
+			if test -a /bin/$newFile
+			then
+				echo "		Deleting file   /bin/"$newFile   
+				rm /bin/$newFile
+			fi
+			##end
+			#dialog --title "Information" --backtitle "BlueQueen Framework" --msgbox "UnInstallation Complete" 7 50
+		fi 
+	done
+	echo
+	echo
+	echo-green "Uninstallation complete!\n"
+	##installation procedure end
+	;; #yes
+1) echo-red "Uninstallation Aborted\n" ;; #no
+255) echo-red "Uninstallation Aborted\n" ;; #exit
+esac
+

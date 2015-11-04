@@ -1,0 +1,35 @@
+#!/bin/bash
+#BlueQueen Framework enable-firewall
+#compatible : iptables, ufw
+
+echo "BlueQueen Framework enable-firewall"
+echo
+ufw="yes"
+command -v ufw > /dev/null 2>&1 || \
+{
+	ufw="no"
+}
+iptables=yes
+command -v iptables > /dev/null 2>&1 || \
+{
+	iptables="no"
+}
+if [ $iptables = "yes" ]
+then
+	if [ $ufw = "yes" ]
+	then
+		echo "Enabling 'ufw'"
+		ufw enable
+	else
+		echo "Loading rules from: /root/fwall.rules.bq"
+		if test -a /root/fwall.rules.bq
+		then
+			iptables-restore < /root/fwall.rules.bq
+			echo "Rules has been restored. Firewall works."
+		else
+			echo "Saved rules not found. If you have another file with saved rules use 'iptables-restore < /path/to/file'"
+		fi
+	fi
+else
+echo "I couldn't found iptables, stopping"
+fi

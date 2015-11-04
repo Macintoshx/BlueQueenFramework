@@ -1,0 +1,8 @@
+#!/bin/bash
+#BlueQueen Framework <command_name>
+## Optional author info
+echo "BlueQueen Framework <show-iptables v1.0>"
+echo ''
+echo ''
+## Command code
+iptables -L -n --line

@@ -1,0 +1,175 @@
+#!/bin/bash
+#BlueQueen Framework show-fail2ban-logs
+## Optional author info
+echo "BlueQueen Framework show-fail2ban-logs"
+echo
+## Command code
+green='\e[0;32m'
+blue='\e[1;34m'
+red='\e[1;31m'
+endColor='\e[0m'
+function echo-green () { printf "${green}$1${endColor}"; }
+function echo-blue () { printf "${blue}$1${endColor}"; }
+function echo-red () { printf "${red}$1${endColor}"; }
+function echo-readme () 
+{
+	echo-red "Valid arguments : \n\n"
+	nm="show-fail2ban-logs"
+	cm="ban entries stored in file /var/log/fail2ban.log"
+	echo-green "$nm\n"
+	echo "		Show last 6 $cm"
+
+	echo-green "$nm all\n"
+	echo "		Show all $cm"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm 3\n"
+	echo "		Show last 3 (or another number > 0) $cm"
+
+	echo-green "$nm ban\n"
+	echo "		Show last 6 fail2ban bans"
+	
+	echo-green "$nm ban 3\n"
+	echo "		Show last 3 (or another number > 0) fail2ban bans"
+
+	echo-green "$nm ban all\n"
+	echo "		Show all fail2ban bans"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm unban\n"
+	echo "		Show last 6 fail2ban unbans"
+	
+	echo-green "$nm unban 3\n"
+	echo "		Show last 3 (or another number > 0) fail2ban unbans"
+
+	echo-green "$nm unban all\n"
+	echo "		Show all fail2ban unbans"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm warnings\n"
+	echo "		Show last 6 fail2ban warnings"
+	
+	echo-green "$nm warnings 3\n"
+	echo "		Show last 3 (or another number > 0) fail2ban warnings"
+
+	echo-green "$nm warnings all\n"
+	echo "		Show all fail2ban warnings"
+	echo "		Use arrows for moving, and 'q' for exit"
+	
+	echo-green "$nm infos\n"
+	echo "		Show last 6 fail2ban infos"
+	
+	echo-green "$nm infos 3\n"
+	echo "		Show last 3 (or another number > 0) fail2ban infos"
+
+	echo-green "$nm infos all\n"
+	echo "		Show all fail2ban infos"
+	echo "		Use arrows for moving, and 'q' for exit"
+	
+	
+}
+function sh-data ()
+{
+
+comm=$1
+
+if ! [ -z $2 ]
+then
+	re='^[0-9]+$'
+	if ! [[ $2 =~ $re ]]
+	then
+		#$2 is not number
+		if [ $2 = "all" ]
+		then
+			echo-red "ALL $1 infos :"
+			echo
+			read -p "Press enter to show"
+			grep $comm /var/log/fail2ban.log | less
+echo
+		else
+			echo-readme
+		fi
+	else
+		#$2 is number
+		if [ $2 -ge 0 ]
+		then
+			echo-red "Last "
+			printf $2
+			echo-red " $1 infos :\n"
+			echo
+			grep $comm /var/log/fail2ban.log | tail -n $2
+		else
+			echo-red "Argument must be greater than 0\n"
+			echo; echo;
+			echo-readme
+		fi
+	fi
+else
+	#default action for no argument $2
+	echo
+	echo-red "Last "
+	printf 6
+	echo-red " $1 infos :\n"
+	echo
+	grep $comm /var/log/fail2ban.log | tail -n 6
+fi
+}
+###MAIN
+if [ -z $1 ]
+then
+		sh-data "Ban"
+		sh-data "Unban"
+else
+	re='^[0-9]+$'
+	if ! [[ $1 =~ $re ]]
+	then
+		#not number
+		case $1 in
+			"all")
+				sh-data "Ban" "all"
+				sh-data "Unban" "all"
+			;;
+			"ban")
+				if ! [ -z $2 ]; then
+					sh-data "Ban" $2
+				else
+					sh-data "Ban"
+				fi
+			;;
+			"unban")
+				if ! [ -z $2 ]; then
+					sh-data "Unban" $2
+				else
+					sh-data "Unban"
+				fi
+			;;
+			"warnings")
+				if ! [ -z $2 ]; then
+					sh-data "WARNING" $2
+				else
+					sh-data "WARNING"
+				fi
+			;;
+			"infos")
+				if ! [ -z $2 ]; then
+					sh-data "INFO" $2
+				else
+					sh-data "INFO"
+				fi
+			;;
+			*)
+			echo-readme
+			exit 
+		esac
+	else
+		#number
+		if [ $1 -ge 0 ]
+		then
+			sh-data "Ban" $1
+			sh-data "Unban" $1
+		else
+			echo-red "Argument must be greater than 0\n"
+		fi
+	fi
+fi
+echo "done."

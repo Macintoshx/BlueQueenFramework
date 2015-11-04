@@ -1,0 +1,36 @@
+#!/bin/sh
+# sends a text file as GPG encrypted email body content to the TO address below
+# params:
+# $1        path of text file to encrypt
+# $2        subject line
+
+sendEncTextFile()
+{
+    PUBKEY=" PUBLIC KEY FILE ADDRESS HERE "
+    TO="RECIPIENT'S EMAIL"
+    FROM="SENDER's email"
+    GPG="/usr/bin/gpg"
+    SENDMAIL="/usr/sbin/sendmail"
+ 
+    # read in the passed $1 parameter,
+    # encrypt it for RECIPIENT. redirect stderr > stdout
+    # for easier inspection of gpg error message
+    #ENC=$("${GPG}" --batch --armor --trust-model always --no-default-keyring --recipient "$TO" --encrypt < "$1" 2>&1)
+    ENC=$("${GPG}" --batch --armor --trust-model always --recipient "$TO" --encrypt --sign --passphrase Omega123< "$1" 2>&1)
+    # failed to encrypt. prepend error message to content and send clear text content
+    if [ $? -ne 0 ]; then
+        ENC="Failed to encrypt contents: $ENC"
+        ENC+=$'\n\n'
+        ENC+=$(cat "$1")
+    fi
+ 
+    cat <<EOF | "${SENDMAIL}" -t
+From: ${FROM}
+To: ${TO}
+Subject: ${2}
+Content-type: text/plain
+${ENC}
+EOF
+}
+
+sendEncTextFile $1 $2

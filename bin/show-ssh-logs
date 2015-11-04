@@ -1,0 +1,166 @@
+#!/bin/bash
+#BlueQueen Framework show-ssh-logs
+## Optional author info
+echo "BlueQueen Framework show-ssh-logs"
+echo
+## Command code
+green='\e[0;32m'
+blue='\e[1;34m'
+red='\e[1;31m'
+endColor='\e[0m'
+function echo-green () { printf "${green}$1${endColor}"; }
+function echo-blue () { printf "${blue}$1${endColor}"; }
+function echo-red () { printf "${red}$1${endColor}"; }
+function echo-readme () 
+{
+	echo-red "Valid arguments : \n\n"
+	nm="show-ssh-logs"
+	cm="invalid ,failed and other ssh connections stored in file /var/log/auth.log"
+	echo-green "$nm\n"
+	echo "		Show last 6 $cm"
+
+	echo-green "$nm all\n"
+	echo "		Show all $cm"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm 3\n"
+	echo "		Show last 3 (or another number > 0) $cm"
+
+	echo-green "$nm invalid\n"
+	echo "		Show last 6 invalid ssh login attempts"
+	echo-blue "		INVALID - e.g. Attempt to log into an account that does not exists\n"
+	
+	echo-green "$nm invalid 3\n"
+	echo "		Show last 3 (or another number > 0) invalid ssh login attempts"
+
+	echo-green "$nm invalid all\n"
+	echo "		Show all invalid ssh login attempts"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm failed\n"
+	echo "		Show last 6 failed ssh login attempts"
+	echo-blue "		FAILED - e.g. Wrong password, (possible BruteForce)\n"
+	
+	echo-green "$nm failed 3\n"
+	echo "		Show last 3 (or another number > 0) failed ssh login attempts"
+
+	echo-green "$nm failed all\n"
+	echo "		Show all failed ssh login attempts"
+	echo "		Use arrows for moving, and 'q' for exit"
+
+	echo-green "$nm other\n"
+	echo "		Show last 6 other ssh connections"
+	echo-blue "		OTHER - e.g. Connection to server without entering a user name and password (Scanning)\n"
+	
+	echo-green "$nm other 3\n"
+	echo "		Show last 3 (or another number > 0) other ssh connections"
+
+	echo-green "$nm other all\n"
+	echo "		Show all other ssh connections"
+	echo "		Use arrows for moving, and 'q' for exit"
+	
+	
+}
+function sh-data ()
+{
+if [ $1 = "other" ]; then
+comm="Did"
+else
+comm=$1
+fi
+if ! [ -z $2 ]
+then
+	re='^[0-9]+$'
+	if ! [[ $2 =~ $re ]]
+	then
+		#$2 is not number
+		if [ $2 = "all" ]
+		then
+			echo-red "ALL $1 login attempts :"
+			echo
+			read -p "Press enter to show"
+			grep sshd.\*$comm /var/log/auth.log | less
+echo
+		else
+			echo-readme
+		fi
+	else
+		#$2 is number
+		if [ $2 -ge 0 ]
+		then
+			echo-red "Last "
+			printf $2
+			echo-red " $1 login attempts :\n"
+			echo
+			grep sshd.\*$comm /var/log/auth.log | tail -n $2
+		else
+			echo-red "Argument must be greater than 0\n"
+			echo; echo;
+			echo-readme
+		fi
+	fi
+else
+	#default action for no argument $2
+	echo
+	echo-red "Last "
+	printf 6
+	echo-red " $1 login attempts :\n"
+	echo
+	grep sshd.\*$comm /var/log/auth.log | tail -n 6
+fi
+}
+###MAIN
+if [ -z $1 ]
+then
+		sh-data "Failed"
+		sh-data "Invalid"
+		sh-data "other"
+else
+	re='^[0-9]+$'
+	if ! [[ $1 =~ $re ]]
+	then
+		#not number
+		case $1 in
+			"all")
+				sh-data "Failed" "all"
+				sh-data "Invalid" "all"
+				sh-data "other" "all"
+			;;
+			"invalid")
+				if ! [ -z $2 ]; then
+					sh-data "Invalid" $2
+				else
+					sh-data "Invalid"
+				fi
+			;;
+			"failed")
+				if ! [ -z $2 ]; then
+					sh-data "Failed" $2
+				else
+					sh-data "Failed"
+				fi
+			;;
+			"other")
+				if ! [ -z $2 ]; then
+					sh-data $1 $2
+				else
+					sh-data $1
+				fi
+			;;
+			*)
+			echo-readme
+			exit 
+		esac
+	else
+		#number
+		if [ $1 -ge 0 ]
+		then
+			sh-data "Failed" $1
+			sh-data "Invalid" $1
+			sh-data "other" $1
+		else
+			echo-red "Argument must be greater than 0\n"
+		fi
+	fi
+fi
+echo "done."

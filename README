@@ -1,0 +1,28 @@
+BlueQueen Framework v1.1 beta
+
+Requirements:
+-dialog
+-privileges
+
+All rights reserved, Macintoshx (c), 2015
+Editing is allowed, provided that you insert information about the original author.
+
+
+
+
+INSTALLATION
+1.
+copy all files to any folder (you need root rights...)
+
+2.
+go to directory with all data.
+change permissions to files install and uninstall.
+chmod +x ./install
+chmod +x ./uninstall
+3.
+./install
+
+Scripts stored in folder bin-manually-install won't be automatically installed.
+Information how to set-up are included to scrpipt's headline.
+
+
